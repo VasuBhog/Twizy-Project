@@ -8,7 +8,7 @@ import org.opencv.imgcodecs.Imgcodecs;
 public class Picture_Matrix {
 	   public static void main(String[] args){
 		  System.loadLibrary( Core.NATIVE_LIBRARY_NAME);
-		  Mat m= Imgcodecs.imread("opencv.png");
+		  Mat m= Imgcodecs.imread("assets/opencv.png");
 		  //System.out.println("height of the picture: " + m.height());
 		  //System.out.println("width of the picture: " + m.width());
 		  //System.out.println(m.channels());

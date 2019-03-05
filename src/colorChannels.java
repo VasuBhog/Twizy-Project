@@ -19,7 +19,9 @@ import org.opencv.core.Mat;
 import org.opencv.core.MatOfByte;
 import org.opencv.core.MatOfInt4;
 import org.opencv.core.MatOfPoint;
+import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Point;
+import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
@@ -57,7 +59,7 @@ public class colorChannels {
 	//splitting image up into RGB
 	public static void RGB(){
 		  System.loadLibrary( Core.NATIVE_LIBRARY_NAME);
-		  Mat m= LectureImage("bgr.png");
+		  Mat m= LectureImage("assets/bgr.png");
 		  Vector<Mat> channels = new Vector<Mat>();
 		  Core.split(m,channels); //break a matrix of an image
 		  //for(int i=0; i<channels.size();i++) {
@@ -82,10 +84,10 @@ public class colorChannels {
 		  }
 	}
 	
-	//Change the color space - getting HSV 
+	//Change the color space - getting HSV (Hue-Saturation-Value)
 	public static void BGR_HSV(){
 		System.loadLibrary( Core.NATIVE_LIBRARY_NAME);
-		Mat m = LectureImage("hsv.png");
+		Mat m = LectureImage("assets/hsv.png");
 		Mat output = Mat.zeros(m.size(), m.type());
 		Imgproc.cvtColor(m, output, Imgproc.COLOR_BGR2HSV);
 		ImShow("HSV",output);
@@ -115,7 +117,7 @@ public class colorChannels {
 	//Thresholding of an image by color
 	public static void single_threshold() {
 		System.loadLibrary( Core.NATIVE_LIBRARY_NAME);
-		Mat m = LectureImage("circles.jpg");
+		Mat m = LectureImage("assets/circles.jpg");
 		Mat hsv_image = Mat.zeros(m.size(), m.type());
 		Imgproc.cvtColor(m, hsv_image, Imgproc.COLOR_BGR2HSV);
 		Mat threshold_img = new Mat();
@@ -125,34 +127,56 @@ public class colorChannels {
 		ImShow("Circles with smoothing",threshold_img);
 	}
 	
-	//Multi threshold 
-	public static Mat multi_threshold(Mat img) {
+	//Multi threshold - for multiple objects 
+	public static Mat multi_threshold(String file) {
 		System.loadLibrary( Core.NATIVE_LIBRARY_NAME);
-		Mat m = LectureImage("img");
+		Mat m = LectureImage(file);
 		Mat hsv_image = Mat.zeros(m.size(), m.type());
 		Imgproc.cvtColor(m, hsv_image, Imgproc.COLOR_BGR2HSV);
-		Mat threshold_img1 = new Mat();
-		Mat threshold_img2 = new Mat();
+		Mat threshold_img1 = new Mat();//red - orange
+		Mat threshold_img2 = new Mat(); //red
+		Mat threshold_img3 = new Mat(); //yellow
+		Mat threshold_img4 = new Mat(); //black
+		Mat threshold_img5 = new Mat(); //blue
+		Mat threshold_img6 = new Mat(); //purple
 		Mat threshold_img = new Mat();
+		//ImShow("Circles",m);
+		//ImShow("HSV",hsv_image);
+		//orange color - hsv range
 		Core.inRange(hsv_image, new Scalar(0,100,100), new Scalar(10,255,255), threshold_img1);
+		//red color - hsv range
 		Core.inRange(hsv_image, new Scalar(160,100,100), new Scalar(179,255,255), threshold_img2);
-		Core.bitwise_or(threshold_img1, threshold_img2, threshold_img);
-		//ImShow("Circles NOT with smoothing",threshold_img3);
+		//yellow color - hsv range
+		Core.inRange(hsv_image, new Scalar(20,100,100), new Scalar(65,255,255), threshold_img3);
+		//black color - hsv range
+		Core.inRange(hsv_image, new Scalar(0,0,0), new Scalar(180,255,30), threshold_img4);
+		//blue color - hsv range
+		Core.inRange(hsv_image, new Scalar(110,50,50), new Scalar(130,255,255), threshold_img5);
+		//purple color - hsv range
+		Core.inRange(hsv_image, new Scalar(130,100,50), new Scalar(160,255,255), threshold_img6);
+		//Combining the images 
+		Core.bitwise_or(threshold_img1, threshold_img2, threshold_img); //orange and red circle
+		Core.bitwise_or(threshold_img, threshold_img3, threshold_img); //previous circle and yellow circle
+		Core.bitwise_or(threshold_img, threshold_img4, threshold_img); //pre-circle and black
+		Core.bitwise_or(threshold_img, threshold_img5, threshold_img); //pre-circle and blue 
+		Core.bitwise_or(threshold_img, threshold_img6, threshold_img); //pre-circle and blue 
+		//ImShow("Circles NOT with smoothing",threshold_img);
 		Imgproc.GaussianBlur(threshold_img, threshold_img, new Size(9,9), 2,2);
-		//ImShow("Circles with smoothing",threshold_img3);
+		ImShow("Circles with smoothing",threshold_img);
 		return threshold_img;
+
 	}
 	
 	//Edge Detection - contour is border between two objects in an image
 	
-	public static void extract() {
+	public static void extract(String file) {
 		System.loadLibrary( Core.NATIVE_LIBRARY_NAME);
-		Mat m = LectureImage("circles.jpg");
+		Mat m = LectureImage(file);
 		ImShow("Circles",m);
 		Mat hsv_image = Mat.zeros(m.size(),m.type());
 		Imgproc.cvtColor(m, hsv_image, Imgproc.COLOR_BGR2HSV);
-		ImShow("HSV", hsv_image);
-		Mat threshold_img = multi_threshold(hsv_image);
+		Mat threshold_img = multi_threshold(file);
+		System.out.println(threshold_img);
 		ImShow("Circles with Smoothing", threshold_img);
 		int thresh = 100;
 		Mat canny_output = new Mat();
@@ -171,12 +195,145 @@ public class colorChannels {
 		ImShow("Contours",drawing);
 	}
 	
+	//Detect Circles 
+		public static Mat detect_circles(Mat img, String file) {
+			System.loadLibrary( Core.NATIVE_LIBRARY_NAME);
+			Mat m = LectureImage(file);
+			Mat hsv_image = Mat.zeros(m.size(), m.type());
+			Imgproc.cvtColor(m, hsv_image, Imgproc.COLOR_BGR2HSV);
+			Mat threshold_img1 = new Mat();//red - orange
+			Mat threshold_img2 = new Mat(); //red
+			Mat threshold_img3 = new Mat(); //yellow
+			Mat threshold_img4 = new Mat(); //black
+			Mat threshold_img5 = new Mat(); //blue
+			Mat threshold_img6 = new Mat(); //purple
+			Mat threshold_img = new Mat();
+			//ImShow("Circles",m);
+			//ImShow("HSV",hsv_image);
+			//orange color - hsv range
+			Core.inRange(hsv_image, new Scalar(0,100,100), new Scalar(10,255,255), threshold_img1);
+			//red color - hsv range
+			Core.inRange(hsv_image, new Scalar(160,100,100), new Scalar(179,255,255), threshold_img2);
+			//yellow color - hsv range
+			Core.inRange(hsv_image, new Scalar(20,100,100), new Scalar(65,255,255), threshold_img3);
+			//black color - hsv range
+			Core.inRange(hsv_image, new Scalar(0,0,0), new Scalar(180,255,30), threshold_img4);
+			//blue color - hsv range
+			Core.inRange(hsv_image, new Scalar(110,50,50), new Scalar(130,255,255), threshold_img5);
+			//purple color - hsv range
+			Core.inRange(hsv_image, new Scalar(130,100,50), new Scalar(160,255,255), threshold_img6);
+			//Combining the images 
+			Core.bitwise_or(threshold_img1, threshold_img2, threshold_img); //orange and red circle
+			Core.bitwise_or(threshold_img, threshold_img3, threshold_img); //previous circle and yellow circle
+			Core.bitwise_or(threshold_img, threshold_img4, threshold_img); //pre-circle and black
+			Core.bitwise_or(threshold_img, threshold_img5, threshold_img); //pre-circle and blue 
+			Core.bitwise_or(threshold_img, threshold_img6, threshold_img); //pre-circle and blue 
+			//ImShow("Circles NOT with smoothing",threshold_img);
+			Imgproc.GaussianBlur(threshold_img, threshold_img, new Size(9,9), 2,2);
+			//ImShow("Circles with smoothing",threshold_img);
+			return threshold_img;
+		}
+		
+		public static List<MatOfPoint> detect_contour(Mat img, String file) {
+			System.loadLibrary( Core.NATIVE_LIBRARY_NAME);
+			Mat m = LectureImage(file);
+			//ImShow("Circles",m);
+			Mat hsv_image = Mat.zeros(m.size(),m.type());
+			Imgproc.cvtColor(m, hsv_image, Imgproc.COLOR_BGR2HSV);
+			Mat threshold_img = detect_circles(hsv_image,file);
+			System.out.println(threshold_img);
+			//ImShow("Circles with Smoothing", threshold_img);
+			int thresh = 100;
+			Mat canny_output = new Mat();
+			List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
+			MatOfInt4 hierarchy = new MatOfInt4();
+			Imgproc.Canny( threshold_img, canny_output, thresh, thresh*2);
+			Imgproc.findContours( canny_output, contours, hierarchy,Imgproc.RETR_EXTERNAL, 
+			           Imgproc.CHAIN_APPROX_SIMPLE);
+			Mat drawing = Mat.zeros( canny_output.size(), CvType.CV_8UC3 );
+			Random rand = new Random();
+			for( int i = 0; i< contours.size(); i++ ) {
+			  Scalar color = new Scalar( rand.nextInt(255 - 0 + 1) , rand.nextInt(255 - 0 + 1), 
+			                rand.nextInt(255 - 0 + 1) );
+			  Imgproc.drawContours( drawing, contours, i, color, 1, 8, hierarchy, 0, new Point() );
+			}
+			ImShow("Contours",drawing);
+			return contours;
+		}
+	
+	//Recognize Shapes Contours
+	public static void shape_contour(String file) {
+		System.loadLibrary( Core.NATIVE_LIBRARY_NAME);
+		Mat m = LectureImage(file);
+		ImShow("Circles and Rectangles",m);
+		Mat hsv_image = Mat.zeros(m.size(), m.type());
+		Imgproc.cvtColor(m, hsv_image, Imgproc.COLOR_BGR2HSV);
+		ImShow("HSV",hsv_image);
+		Mat threshold_img = detect_circles(hsv_image,file);
+		ImShow("Smoothing",threshold_img);
+		List<MatOfPoint> contours = detect_contour(threshold_img,file);
+		
+		MatOfPoint2f matOfPoint2f = new MatOfPoint2f();
+		float[] radius = new float[1];
+		Point center = new Point();
+		for (int c=0; c < contours.size(); c++) {
+			MatOfPoint contour = contours.get(c);
+			double contourArea = Imgproc.contourArea(contour);
+			matOfPoint2f.fromList(contour.toList());
+			Imgproc.minEnclosingCircle(matOfPoint2f, center, radius);
+			if ((contourArea/(Math.PI*radius[0]*radius[0])) >= 0.8){
+				Imgproc.circle(m,center,(int)radius[0], new Scalar(0,255,0),2);
+			}
+		}
+		ImShow("Detection of Red Circles",m);
+	}
+	
+	
+	
+	//Template matching - matching image with other image
+	public static void template(String file) {
+		System.loadLibrary( Core.NATIVE_LIBRARY_NAME);
+		Mat m = LectureImage(file);
+		ImShow("Ball",m);
+		Mat hsv_image = Mat.zeros(m.size(), m.type());
+		Imgproc.cvtColor(m, hsv_image, Imgproc.COLOR_BGR2HSV);
+		ImShow("HSV",hsv_image);
+		Mat threshold_img = detect_circles(hsv_image,file);
+		ImShow("Smoothing",threshold_img);
+		List<MatOfPoint> contours = detect_contour(threshold_img,file);
+		
+		//template matching 
+		MatOfPoint2f matOfPoint2f = new MatOfPoint2f();
+		float[] radius = new float[1];
+		Point center = new Point();
+		for (int c=0; c < contours.size(); c++) {
+			MatOfPoint contour = contours.get(c);
+			double contourArea = Imgproc.contourArea(contour);
+			matOfPoint2f.fromList(contour.toList());
+			Imgproc.minEnclosingCircle(matOfPoint2f, center, radius);
+			if ((contourArea/(Math.PI*radius[0]*radius[0])) >= 0.8){
+				Imgproc.circle(m,center,(int)radius[0], new Scalar(0,255,0),2);
+				Rect rect = Imgproc.boundingRect(contour);
+				Imgproc.rectangle(m, new Point(rect.x,rect.y),
+						new Point(rect.x+rect.width,rect.y+rect.height),
+						new Scalar(0,255,0),2);
+				Mat tmp = m.submat(rect.y,rect.y+rect.height,rect.x,rect.x+rect.width);
+				Mat ball = Mat.zeros(tmp.size(), tmp.type());
+				tmp.copyTo(ball);
+				ImShow("Ball",ball);
+			}
+		}
+	}
+	
+	
 	public static void main(String[] args){
 		System.loadLibrary( Core.NATIVE_LIBRARY_NAME);
 		//RGB(); //prints out RGB result
 		//BGR_HSV();
 		//single_threshold();
-		//multi_threshold();
-		extract();
+		//multi_threshold("assets/circles_rectangles.jpg");
+		//extract("assets/circles.jpg");
+		//shape_contour("assets/circles_rectangles.jpg");
+		template("assets/Billard_Balls.jpg");
 	}
 }

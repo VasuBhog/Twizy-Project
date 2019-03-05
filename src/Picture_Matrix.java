@@ -3,12 +3,12 @@ import java.io.File;
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
-import org.opencv.highgui.Highgui;
+import org.opencv.imgcodecs.Imgcodecs;
 
-public class Picture {
+public class Picture_Matrix {
 	   public static void main(String[] args){
 		  System.loadLibrary( Core.NATIVE_LIBRARY_NAME);
-		  Mat m= Highgui.imread("opencv.png");
+		  Mat m= Imgcodecs.imread("opencv.png");
 		  //System.out.println("height of the picture: " + m.height());
 		  //System.out.println("width of the picture: " + m.width());
 		  //System.out.println(m.channels());

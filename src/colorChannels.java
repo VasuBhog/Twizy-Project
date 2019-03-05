@@ -22,22 +22,22 @@ import org.opencv.core.MatOfPoint;
 import org.opencv.core.Point;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
-import org.opencv.highgui.Highgui;
 import org.opencv.imgproc.Imgproc;
+import org.opencv.imgcodecs.Imgcodecs;
 
 public class colorChannels {
 	
 	//read file
 	public static Mat LectureImage(String file) {
 		File f = new File(file);
-		Mat m = Highgui.imread(f.getAbsolutePath());
+		Mat m = Imgcodecs.imread(f.getAbsolutePath());
 		return m;
 	}
 	
 	//Display matrix in graphical window
 	public static void ImShow(String title, Mat img){
 		  MatOfByte matOfByte = new MatOfByte();
-		  Highgui.imencode(".png", img, matOfByte);
+		  Imgcodecs.imencode(".png", img, matOfByte);
 		  byte[] byteArray = matOfByte.toArray();
 		  BufferedImage bufImage = null;
 		  try {
@@ -128,7 +128,7 @@ public class colorChannels {
 	//Multi threshold 
 	public static Mat multi_threshold(Mat img) {
 		System.loadLibrary( Core.NATIVE_LIBRARY_NAME);
-		Mat m = LectureImage("circles.jpg");
+		Mat m = LectureImage("img");
 		Mat hsv_image = Mat.zeros(m.size(), m.type());
 		Imgproc.cvtColor(m, hsv_image, Imgproc.COLOR_BGR2HSV);
 		Mat threshold_img1 = new Mat();

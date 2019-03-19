@@ -1,3 +1,4 @@
+package Twizy;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -15,16 +16,21 @@ import javax.swing.JLabel;
 
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
+import org.opencv.core.DMatch;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfByte;
+import org.opencv.core.MatOfDMatch;
 import org.opencv.core.MatOfInt4;
+import org.opencv.core.MatOfKeyPoint;
 import org.opencv.core.MatOfPoint;
 import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Point;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
+import org.opencv.features2d.*;
 import org.opencv.imgproc.Imgproc;
+import org.opencv.xfeatures2d.SURF;
 import org.opencv.imgcodecs.Imgcodecs;
 
 public class colorChannels {
@@ -176,7 +182,7 @@ public class colorChannels {
 		Mat hsv_image = Mat.zeros(m.size(),m.type());
 		Imgproc.cvtColor(m, hsv_image, Imgproc.COLOR_BGR2HSV);
 		Mat threshold_img = multi_threshold(file);
-		System.out.println(threshold_img);
+		//System.out.println(threshold_img);
 		ImShow("Circles with Smoothing", threshold_img);
 		int thresh = 100;
 		Mat canny_output = new Mat();
@@ -222,12 +228,13 @@ public class colorChannels {
 			Core.inRange(hsv_image, new Scalar(110,50,50), new Scalar(130,255,255), threshold_img5);
 			//purple color - hsv range
 			Core.inRange(hsv_image, new Scalar(130,100,50), new Scalar(160,255,255), threshold_img6);
+			
 			//Combining the images 
 			Core.bitwise_or(threshold_img1, threshold_img2, threshold_img); //orange and red circle
-			Core.bitwise_or(threshold_img, threshold_img3, threshold_img); //previous circle and yellow circle
-			Core.bitwise_or(threshold_img, threshold_img4, threshold_img); //pre-circle and black
-			Core.bitwise_or(threshold_img, threshold_img5, threshold_img); //pre-circle and blue 
-			Core.bitwise_or(threshold_img, threshold_img6, threshold_img); //pre-circle and blue 
+			//Core.bitwise_or(threshold_img, threshold_img3, threshold_img); //previous circle and yellow circle
+			//Core.bitwise_or(threshold_img, threshold_img4, threshold_img); //pre-circle and black
+			//Core.bitwise_or(threshold_img, threshold_img5, threshold_img); //pre-circle and blue 
+			//Core.bitwise_or(threshold_img, threshold_img6, threshold_img); //pre-circle and blue 
 			//ImShow("Circles NOT with smoothing",threshold_img);
 			Imgproc.GaussianBlur(threshold_img, threshold_img, new Size(9,9), 2,2);
 			//ImShow("Circles with smoothing",threshold_img);
@@ -241,7 +248,7 @@ public class colorChannels {
 			Mat hsv_image = Mat.zeros(m.size(),m.type());
 			Imgproc.cvtColor(m, hsv_image, Imgproc.COLOR_BGR2HSV);
 			Mat threshold_img = detect_circles(hsv_image,file);
-			System.out.println(threshold_img);
+			//System.out.println(threshold_img);
 			//ImShow("Circles with Smoothing", threshold_img);
 			int thresh = 100;
 			Mat canny_output = new Mat();
@@ -262,7 +269,7 @@ public class colorChannels {
 		}
 	
 	//Recognize Shapes Contours
-	public static void shape_contour(String file) {
+	public static Mat shape_contour(String file) {
 		System.loadLibrary( Core.NATIVE_LIBRARY_NAME);
 		Mat m = LectureImage(file);
 		ImShow("Circles and Rectangles",m);
@@ -286,6 +293,7 @@ public class colorChannels {
 			}
 		}
 		ImShow("Detection of Red Circles",m);
+		return m;
 	}
 	
 	
@@ -325,15 +333,137 @@ public class colorChannels {
 		}
 	}
 	
+	public static void feature_detect(String file, String file2) {
+		//SURF Detector
+				Mat firstImg = Imgcodecs.imread(file); //image 1 small image
+				Mat secondImg = Imgcodecs.imread(file2); //image 2 is final template
+				if (firstImg.empty() || secondImg.empty()){
+					System.err.println("Cannot read images!");
+					System.exit(0);
+				}
+				
+				//DETECT keypoints using SURF detector
+				double hessianThreshold = 400;
+				int nOctaves = 4, nOctaveLayers = 3;
+				boolean extended = false, upright = false;
+				SURF detector = SURF.create(hessianThreshold, nOctaves, nOctaveLayers, extended, upright);
+				MatOfKeyPoint keypoints1 = new MatOfKeyPoint();
+				MatOfKeyPoint keypoints2 = new MatOfKeyPoint();
+				Mat descriptors1 = new Mat();
+				Mat descriptors2 = new Mat();
+				detector.detectAndCompute(firstImg, new Mat(), keypoints1, descriptors1);
+				detector.detectAndCompute(secondImg, new Mat(), keypoints2, descriptors2);
+				detector.detect(firstImg, keypoints1);
+				
+				//SURF FEATURES of First Image
+				Mat surfImg1 = firstImg;
+				Features2d.drawKeypoints(surfImg1, keypoints1, surfImg1);
+				ImShow("Surf Keypoints",surfImg1);
+				
+				//SURF Features of Second Image
+				Mat surfImg2 = secondImg;
+				Features2d.drawKeypoints(surfImg2, keypoints2, surfImg2);
+				ImShow("Surf Keypoints",surfImg2);
+		
+	}
+	
+	public static void matching(String file, String file2) {
+		System.loadLibrary( Core.NATIVE_LIBRARY_NAME);
+		Mat m = LectureImage(file);
+		ImShow("Ball",m);
+		Mat hsv_image = Mat.zeros(m.size(), m.type());
+		Imgproc.cvtColor(m, hsv_image, Imgproc.COLOR_BGR2HSV);
+		ImShow("HSV",hsv_image);
+		Mat threshold_img = detect_circles(hsv_image,file);
+		ImShow("Smoothing",threshold_img);
+		List<MatOfPoint> contours = detect_contour(threshold_img,file);
+		
+		//template matching 
+		MatOfPoint2f matOfPoint2f = new MatOfPoint2f();
+		float[] radius = new float[1];
+		Point center = new Point();
+		for (int c=0; c < contours.size(); c++) {
+			MatOfPoint contour = contours.get(c);
+			double contourArea = Imgproc.contourArea(contour);
+			matOfPoint2f.fromList(contour.toList());
+			Imgproc.minEnclosingCircle(matOfPoint2f, center, radius);
+			if ((contourArea/(Math.PI*radius[0]*radius[0])) >= 0.8){
+				Imgproc.circle(m,center,(int)radius[0], new Scalar(0,255,0),2);
+				Rect rect = Imgproc.boundingRect(contour);
+				Imgproc.rectangle(m, new Point(rect.x,rect.y),
+						new Point(rect.x+rect.width,rect.y+rect.height),
+						new Scalar(0,255,0),2);
+				Mat tmp = m.submat(rect.y,rect.y+rect.height,rect.x,rect.x+rect.width);
+				Mat ball = Mat.zeros(tmp.size(), tmp.type());
+				tmp.copyTo(ball);
+				ImShow("Ball",ball);
+			
+		
+				//SURF Detector
+				Mat firstImg = ball; //image 1 small image
+				Mat secondImg = Imgcodecs.imread(file2); //image 2 is final template
+				if (firstImg.empty() || secondImg.empty()){
+					System.err.println("Cannot read images!");
+					System.exit(0);
+				}
+				
+				
+				//DETECT keypoints using SURF detector
+				double hessianThreshold = 400;
+				int nOctaves = 4, nOctaveLayers = 3;
+				boolean extended = false, upright = false;
+				SURF detector = SURF.create(hessianThreshold, nOctaves, nOctaveLayers, extended, upright);
+				MatOfKeyPoint keypoints1 = new MatOfKeyPoint();
+				MatOfKeyPoint keypoints2 = new MatOfKeyPoint();
+				Mat descriptors1 = new Mat();
+				Mat descriptors2 = new Mat();
+				detector.detectAndCompute(firstImg, new Mat(), keypoints1, descriptors1);
+				detector.detectAndCompute(secondImg, new Mat(), keypoints2, descriptors2);
+				detector.detect(firstImg, keypoints1);
+				
+				
+				//Matching Descriptor vectors with BruteForce
+				DescriptorMatcher matcher = DescriptorMatcher.create(DescriptorMatcher.BRUTEFORCE);
+				List<MatOfDMatch> knnMatches = new ArrayList<>();
+				matcher.knnMatch(descriptors1, descriptors2, knnMatches,2);
+				
+				
+				//find good matches
+				//-- Filter matches using the Lowe's ratio test
+		        float ratioThresh = 0.7f;
+		        List<DMatch> listOfGoodMatches = new ArrayList<>();
+		        for (int i = 0; i < knnMatches.size(); i++) {
+		            if (knnMatches.get(i).rows() > 1) {
+		                DMatch[] matches = knnMatches.get(i).toArray();
+		                if (matches[0].distance < ratioThresh * matches[1].distance) {
+		                    listOfGoodMatches.add(matches[0]);
+		                }
+		            }
+		        }
+		        MatOfDMatch goodMatches = new MatOfDMatch();
+		        goodMatches.fromList(listOfGoodMatches);
+				
+				//draw matches
+				Mat imgMatches = new Mat();
+				Features2d.drawMatches(firstImg, keypoints1, secondImg, keypoints2, goodMatches, imgMatches);
+				//show detected matches
+				ImShow("Matches of the Images",imgMatches);
+			}
+		}
+	}
+
+	
 	
 	public static void main(String[] args){
-		System.loadLibrary( Core.NATIVE_LIBRARY_NAME);
+		System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
 		//RGB(); //prints out RGB result
 		//BGR_HSV();
 		//single_threshold();
 		//multi_threshold("assets/circles_rectangles.jpg");
 		//extract("assets/circles.jpg");
-		//shape_contour("assets/circles_rectangles.jpg");
-		template("assets/Billard_Balls.jpg");
+		//shape_contour("assets/Billard_Balls.jpg");
+		//template("assets/Billard_Balls.jpg");
+		//feature_detect("assets/Ball_three.png","assets/Billard_Balls.jpg");							//Get Images Keypoints using SURF
+		matching("assets/Ball_three.png","assets/Billard_Balls.jpg"); 		//Matching of the Images
 	}
 }

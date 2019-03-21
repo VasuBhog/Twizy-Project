@@ -89,7 +89,7 @@ public class roadDetect {
 			//Mat threshold_img5 = new Mat(); //blue
 			//Mat threshold_img6 = new Mat(); //purple
 			//ImShow("Circles",m);
-			ImShow("HSV",hsv_image);
+			//ImShow("HSV",hsv_image);
 			
 			//orange color - hsv range 0 - 3 
 			Core.inRange(hsv_image, new Scalar(0,100,100), new Scalar(6,255,255), threshold_img1);
@@ -148,7 +148,7 @@ public class roadDetect {
 				Imgproc.drawContours( drawing, contours, i, color, 1, 8, hierarchy, 0, new Point() );
 			}
 			
-			ImShow("Contours",drawing);
+			//ImShow("Contours",drawing);
 			return contours;
 		}
 		
@@ -164,13 +164,13 @@ public class roadDetect {
 				matOfPoint2f.fromList(contour.toList());
 				Imgproc.minEnclosingCircle(matOfPoint2f, center, radius);
 				if ((contourArea/(Math.PI*radius[0]*radius[0])) >= 0.8){
-					
 					//center2?
 					Point center2 = new Point(center.x,center.y);
 					//Change Trace color
 					Imgproc.circle(img,center,(int)radius[0], new Scalar(0,255,0),1,8,0);
 		
 					findCircle.add(new findCircle(center2,(int)radius[0]));
+					
 				}
 				
 			}
@@ -268,7 +268,7 @@ public class roadDetect {
 			Features2d.drawMatches(ref, keypoints1, resizedImg, keypoints2, goodMatches, imgMatches);
 			int row = goodMatches.rows();
 			//System.out.println(row);
-			ImShow("",imgMatches);
+			//ImShow("",imgMatches);
 			return(goodMatches);
 		}	
 
@@ -287,13 +287,13 @@ public class roadDetect {
 					//call matching
 					matchImage=matching(roadDetect.LectureImage("Twizy_assets/ref"+speed[i]+".jpg"), cropped).toList();
 					nbMatchSpeed[i]=matchImage.size();
-					System.out.println("Speed " +speed[i]+" : "+nbMatchSpeed[i] + " Matched Keypoints");
+					//System.out.println("Speed " +speed[i]+" : "+nbMatchSpeed[i] + " Matched Keypoints");
 				}
 				else {
 					//prints matches for the double road sign
 					matchImage=matching(roadDetect.LectureImage("Twizy_assets/refdouble.jpg"), cropped).toList();
 					nbMatchSpeed[i]=matchImage.size();
-					System.out.println("Double Road Sign"+" : " + nbMatchSpeed[i] + " Matched Keypoints");
+					//System.out.println("Double Road Sign"+" : " + nbMatchSpeed[i] + " Matched Keypoints");
 
 				}
 				
@@ -306,8 +306,12 @@ public class roadDetect {
 			}
 			res.add(indiceMatchSpeed);
 
-			if(indiceMatchSpeed==speed.length) {System.out.println("\nDouble Road Sign Found!\n");} //" nbMatchSpeed[indiceMatchSpeed]
-			else {System.out.println("\nSpeed Found: " +speed[indiceMatchSpeed]+" Km/h\n");}
+			if(indiceMatchSpeed==speed.length) {
+				System.out.println("\nDouble Road Sign Found!\n");
+			} 
+			else {
+				System.out.println("\nSpeed Found: " +speed[indiceMatchSpeed]+" Km/h\n");
+			}
 
 			return(res);
 		}
@@ -331,7 +335,7 @@ public class roadDetect {
 				res  = matchingImages(cropped);
 			}
 
-			//roadDetect.ImShow("Detected Panel", imgOri);
+			//ImShow("Detected Panel", imgOri);
 			
 			
 			return(res);

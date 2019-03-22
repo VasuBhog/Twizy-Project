@@ -7,13 +7,13 @@ Learn about OpenCV, Image Processing, Real-Time Data Processing, Computer Vision
 
 Background:
 
-Autonomous vehicles and robots need to perceive their environments
+Autonomous vehicles and robots need to perceive their environments:
  - Including other vehicles, objects, pedestrians, signs
  - Perceive -> Analyze –> Act
  
 The detection and recognition of road signs is essential for the movement of vehicles on the roads
 
-We will use several onboard data acquisition sensors
+We will use several onboard data acquisition sensors:
  - Onboard cameras 3D 
  - LIDAR
 

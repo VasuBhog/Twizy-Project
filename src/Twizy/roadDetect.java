@@ -71,6 +71,7 @@ public class roadDetect {
 		public static Mat HSV(Mat img) {
 			Mat hsv = new Mat(img.size(),img.type());
 			Imgproc.cvtColor(img, hsv, Imgproc.COLOR_BGR2HSV);
+			//ImShow("HSV",hsv);
 			return(hsv);
 		}
 		
@@ -170,7 +171,9 @@ public class roadDetect {
 					Imgproc.circle(img,center,(int)radius[0], new Scalar(0,255,0),1,8,0);
 		
 					findCircle.add(new findCircle(center2,(int)radius[0]));
-					
+					//System.out.println(radius[0]);
+					//radiusList.add(radius[0]);
+
 				}
 				
 			}
@@ -273,7 +276,7 @@ public class roadDetect {
 		}	
 
 		
-		public static List<Integer> matchingImages(Mat cropped) {
+		public static List<Integer> matchingImages(Mat cropped, List<Integer> speedList, Boolean accurateSpeed) {
 			List<DMatch> matchImage;
 			int[] speed = {30,50,70,90,110};
 			int[] nbMatchSpeed = new int[speed.length+1];
@@ -304,19 +307,28 @@ public class roadDetect {
 				}	
 						
 			}
+			
 			res.add(indiceMatchSpeed);
-
-			if(indiceMatchSpeed==speed.length) {
-				System.out.println("\nDouble Road Sign Found!\n");
-			} 
-			else {
-				System.out.println("\nSpeed Found: " +speed[indiceMatchSpeed]+" Km/h\n");
-			}
-
+			//for(int i=0;i<radiusList.size()-1;i++) {
+				//int currentRadius = radiusList.get(i);
+				//int nextRadius = radiusList.get(i+1);
+				
+				
+				speedList.add(speed[indiceMatchSpeed]);
+				//System.out.println(speed[indiceMatchSpeed]);
+				if(accurateSpeed){
+					//System.out.print(speed[indiceMatchSpeed]);
+					if(indiceMatchSpeed==speed.length) {
+						System.out.println("\nDouble Road Sign Found!\n");
+					} 
+					else {
+						System.out.println("\nSpeed Found: " +speed[indiceMatchSpeed]+" Km/h\n");
+					}
+				}	
 			return(res);
 		}
 
-		public static List<Integer> detectionImages(Mat img) {
+		public static List<Integer> detectionImages(Mat img, List<Integer> speedList, Boolean accurateSpeed, List<Integer> radiusList) {
 
 			res = new ArrayList<Integer>();
 			findCircle = new ArrayList<findCircle>();
@@ -332,12 +344,13 @@ public class roadDetect {
 			for(int x=0;x<findCircle.size();x++) {
 				
 				Mat cropped=extract_Circle(imgOri,findCircle.get(x).center,findCircle.get(x).radius);
-				res  = matchingImages(cropped);
+				radiusList.add(findCircle.get(x).radius);
+				res  = matchingImages(cropped,speedList,accurateSpeed);
 			}
 
 			//ImShow("Detected Panel", imgOri);
 			
-			
+			System.out.println(res);
 			return(res);
 		}
 		

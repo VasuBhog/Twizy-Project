@@ -66,17 +66,70 @@ public class main {
 		jframe.setVisible(true);
 
 		Mat frame = new Mat();
-		VideoCapture camera = new VideoCapture("Twizy_assets/video2.avi");
+		VideoCapture camera = new VideoCapture("Twizy_assets/video1.avi");
 		Mat PanelAnalyze = null;
+		
+		List<Integer> radiusList = new ArrayList<>();
+		List<Integer> speedList = new ArrayList<>();
 
-			while (camera.read(frame)) {
+		int currentRadius = 0;
+		int previousRadius = 0;
+		boolean lastRadius = false;
+		
+		boolean accurateSpeed = false; 
+		int speedCount = 0;
+		int currentSpeed = 0;
+		int previousSpeed = 0;
+		
+		while (camera.read(frame)) {
 			//use frame and match
-			List<Integer> idVideo = roadDetect.detectionImages(frame);
+			//System.out.println(radiusList.size());
+			if(radiusList.size() >= 2) {
+				previousRadius = radiusList.get(radiusList.size()-2);
+				currentRadius = radiusList.get(radiusList.size()-1);
+			}
+			
+			//System.out.println(previousRadius + "," + currentRadius);
+
+			if(previousRadius - currentRadius > 10) {
+				//System.out.println("WE IN");
+				lastRadius = true;
+				//radiusList = new ArrayList<>();
+				//System.out.println(lastRadius);
+			}
+
+			if(speedList.size() >= 2) {
+				previousSpeed = speedList.get(speedList.size()-2);
+				currentSpeed = speedList.get(speedList.size()-1);
+			}
+			
+			if(previousSpeed == currentSpeed) {
+				speedCount = speedCount+1;
+			}else {
+				speedCount = 0;
+			}
+			
+			//System.out.println(speedCount);
+
+			if(speedCount > 10) {
+				accurateSpeed = true;
+			}
+			
+			
+			//System.out.println(previousRadius);
+			List<Integer> idVideo = roadDetect.detectionImages(frame,speedList,accurateSpeed,radiusList);
 			//System.out.println(idVideo);
 			ImageIcon image = new ImageIcon(Mat2bufferedImage(frame));
 			vidpanel.setIcon(image);
 			vidpanel.repaint();
+			
+			lastRadius = false;
+			accurateSpeed = false;
+			//System.out.println(radiusList);
+
 		}
+
+
 	}
 
 

@@ -1,5 +1,6 @@
 package Twizy;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.opencv.core.Core;
@@ -17,8 +18,9 @@ public class imageMain {
 
 		System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
 		//Images only 
+		List<Integer> radiusList = new ArrayList<>();
 		Mat imgOrigin = roadDetect.LectureImage("Twizy_assets/p"+num+".jpg");
 		roadDetect.ImShow("Road Image: p"+num, imgOrigin );
-		List<Integer> id = roadDetect.detectionImages(imgOrigin);
+		//List<Integer> id = roadDetect.detectionImages(imgOrigin,radiusList);
 	}
 }

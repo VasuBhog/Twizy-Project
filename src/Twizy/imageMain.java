@@ -8,7 +8,7 @@ import org.opencv.core.Mat;
 
 public class imageMain {
 	//Pass: 1,2,4,5,7,8,9,10
-	//FAIL: 3,7(only one right) error after fixes 
+	//FAIL: 3
 
 	public static int num=1;
 
@@ -19,8 +19,12 @@ public class imageMain {
 		System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
 		//Images only 
 		List<Integer> radiusList = new ArrayList<>();
+		List<Integer> speedList = new ArrayList<>();
+		boolean accurateSpeed = false;
+		boolean lastRadius = false;
+
 		Mat imgOrigin = roadDetect.LectureImage("Twizy_assets/p"+num+".jpg");
 		roadDetect.ImShow("Road Image: p"+num, imgOrigin );
-		//List<Integer> id = roadDetect.detectionImages(imgOrigin,radiusList);
+		List<Integer> id = roadDetect.detectionImages(imgOrigin,speedList,accurateSpeed,radiusList,lastRadius);
 	}
 }

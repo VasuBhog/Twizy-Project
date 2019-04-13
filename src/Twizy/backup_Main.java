@@ -1,5 +1,6 @@
 package Twizy;
 
+
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -51,8 +52,10 @@ import org.opencv.imgproc.Imgproc;
 import org.opencv.videoio.VideoCapture;
 import org.opencv.xfeatures2d.SURF;
 
-public class main {
+public class backup_Main {
 	
+	public static int num=1;
+
 	public static void main(String[] args) {
 		System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
 
@@ -84,7 +87,7 @@ public class main {
 		
 		boolean newPanel = false;
 		
-		VideoCapture camera = new VideoCapture("Twizy_assets/video1.avi");
+		VideoCapture camera = new VideoCapture("Twizy_assets/video2.avi");
 		
 		while (camera.read(frame)) {		
 			//checks to see Radius is filled
@@ -96,10 +99,39 @@ public class main {
 			}else {
 				boolean trace = roadDetect.traceOnly(frame);
 				newPanel = trace;
-			}	
+			}
+			
 			ImageIcon image = new ImageIcon(Mat2bufferedImage(frame));
 			vidpanel.setIcon(image);
 			vidpanel.repaint();
+			
+			if(radiusList.size() >= 2) {
+				previousRadius = radiusList.get(radiusList.size()-2);
+				currentRadius = radiusList.get(radiusList.size()-1);
+			}
+			
+			if(radiusList.isEmpty()) {
+				lastRadius = false;
+			}
+			
+			//System.out.println(previousRadius + "," + currentRadius);
+
+			//checks to see if change in sign
+			if(previousRadius - currentRadius > 10) {
+				radiusCount = radiusCount + 1;
+				lastRadius = true;
+				speedList = new ArrayList<>();
+			}
+			
+			if(radiusCount > 1) {
+				lastRadius = false;
+			}
+			
+			
+			
+			
+			lastRadius = false;
+			accurateSpeed = false;
 		}
 	}
 
@@ -118,4 +150,5 @@ public class main {
 		return img;
 	}
 }
+
 

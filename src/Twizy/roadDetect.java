@@ -7,6 +7,7 @@ import java.io.InputStream;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.Vector;
@@ -123,7 +124,8 @@ public class roadDetect {
 			System.loadLibrary( Core.NATIVE_LIBRARY_NAME);
 			Mat m = detect_circles(img);
 			Mat circleMat = new Mat();
-					
+			
+			Imgproc.HoughCircles(m, circleMat, Imgproc.CV_HOUGH_GRADIENT, 2, 100, 100, 90, 0, 1000);
 			List<MatOfPoint> contours = show_contour(m);
 
 			for (int x = 0; x < circleMat.cols(); x++) {
@@ -148,14 +150,15 @@ public class roadDetect {
 						rand.nextInt(255 - 0 + 1) );
 				Imgproc.drawContours( drawing, contours, i, color, 1, 8, hierarchy, 0, new Point() );
 			}
-			
+		
 			//ImShow("Contours",drawing);
 			return contours;
 		}
 		
 		
 		//Recognize Shapes Contours
-		public static void trace_contour(Mat img, List<MatOfPoint> contours) {
+		public static int trace_contour(Mat img, List<MatOfPoint> contours) {
+			int numCircle = 0;
 			MatOfPoint2f matOfPoint2f = new MatOfPoint2f();
 			float[] radius = new float[1];
 			Point center = new Point();
@@ -164,7 +167,7 @@ public class roadDetect {
 				double contourArea = Imgproc.contourArea(contour);
 				matOfPoint2f.fromList(contour.toList());
 				Imgproc.minEnclosingCircle(matOfPoint2f, center, radius);
-				if ((contourArea/(Math.PI*radius[0]*radius[0])) >= 0.8){
+				if ((contourArea/(Math.PI*radius[0]*radius[0])) >= .8 && radius[0]>15){
 					//center2?
 					Point center2 = new Point(center.x,center.y);
 					//Change Trace color
@@ -174,10 +177,12 @@ public class roadDetect {
 					//System.out.println(radius[0]);
 					//radiusList.add(radius[0]);
 
+					numCircle++;
 				}
 				
 			}
 			//ImShow("Detection of Red Circles",img);
+			return numCircle;
 		}
 		
 		public static Mat extract_Circle(Mat src, Point center, int radius) {
@@ -209,7 +214,7 @@ public class roadDetect {
 			Imgproc.resize(ref, ref, sz);
 			//resize the image
 			int interpolation = Imgproc.INTER_CUBIC;
-			Imgproc.resize(img, resizedImg, sz,0,0,interpolation);
+			Imgproc.resize(img, resizedImg,sz,0,0,interpolation);
 			
 			Mat imgGray = new Mat(resizedImg.rows(), resizedImg.cols(), resizedImg.type());
 			Imgproc.cvtColor(resizedImg, imgGray, Imgproc.COLOR_BGR2GRAY);
@@ -219,17 +224,13 @@ public class roadDetect {
 			Imgproc.cvtColor(ref, refGray, Imgproc.COLOR_BGR2GRAY);
 			Core.normalize(refGray, refGray, 0, 255, Core.NORM_MINMAX);
 			
-
-
 			//SURF Detector - MATCHING 
 			if (imgGray.empty() || refGray.empty()){
 				System.err.println("Cannot read images!");
 				System.exit(0);
 			}
-
-
 			//DETECT keypoints using SURF detector
-			double hessianThreshold = 1000;
+			double hessianThreshold = 900;
 			int nOctaves = 4, nOctaveLayers = 3;
 			boolean extended = false, upright = false;
 			SURF detector = SURF.create(hessianThreshold, nOctaves, nOctaveLayers, extended, upright);
@@ -243,16 +244,14 @@ public class roadDetect {
 			detector.detectAndCompute(imgGray, new Mat(), keypoints2, descriptors2);
 			//detector.detect(resizedImg, keypoints1);
 
-
 			//Matching Descriptor vectors with BruteForce
 			DescriptorMatcher matcher = DescriptorMatcher.create(DescriptorMatcher.BRUTEFORCE);
 			List<MatOfDMatch> knnMatches = new ArrayList<>();
 			matcher.knnMatch(descriptors1, descriptors2, knnMatches,2);
 
-
 			//find good matches
 			//-- Filter matches using the Lowe's ratio test
-			float ratioThresh = 0.7f;
+			float ratioThresh = 0.76f;
 			List<DMatch> listOfGoodMatches = new ArrayList<>();
 			for (int i = 0; i < knnMatches.size(); i++) {
 				if (knnMatches.get(i).rows() > 1) {
@@ -262,7 +261,6 @@ public class roadDetect {
 					}
 				}
 			}
-			
 			MatOfDMatch goodMatches = new MatOfDMatch();
 			goodMatches.fromList(listOfGoodMatches);
 
@@ -276,14 +274,14 @@ public class roadDetect {
 		}	
 
 		
-		public static List<Integer> matchingImages(Mat cropped, List<Integer> speedList, Boolean accurateSpeed) {
+		public static List<Integer> matchingImages(Mat cropped, List<Integer> speedList, Boolean accurateSpeed, Boolean lastRadius) {
 			List<DMatch> matchImage;
 			int[] speed = {30,50,70,90,110};
 			int[] nbMatchSpeed = new int[speed.length+1];
 			int indiceMatchSpeed=-1;
 			int maxMatchSpeed=-1;
 			
-			
+			//Keypoints that match
 			for(int i=0;i<speed.length+1;i++) {	
 				//prints out matches for each speed
 				if(i<speed.length) {
@@ -291,44 +289,70 @@ public class roadDetect {
 					matchImage=matching(roadDetect.LectureImage("Twizy_assets/ref"+speed[i]+".jpg"), cropped).toList();
 					nbMatchSpeed[i]=matchImage.size();
 					//System.out.println("Speed " +speed[i]+" : "+nbMatchSpeed[i] + " Matched Keypoints");
-				}
-				else {
+				} else {
 					//prints matches for the double road sign
 					matchImage=matching(roadDetect.LectureImage("Twizy_assets/refdouble.jpg"), cropped).toList();
 					nbMatchSpeed[i]=matchImage.size();
 					//System.out.println("Double Road Sign"+" : " + nbMatchSpeed[i] + " Matched Keypoints");
-
 				}
 				
 				//max speed to get output
 				if(nbMatchSpeed[i]>maxMatchSpeed) {
 					indiceMatchSpeed=i;
 					maxMatchSpeed=nbMatchSpeed[i];
-				}	
-						
+				}
+				
 			}
-			
+
 			res.add(indiceMatchSpeed);
-			//for(int i=0;i<radiusList.size()-1;i++) {
-				//int currentRadius = radiusList.get(i);
-				//int nextRadius = radiusList.get(i+1);
+			speedList.add(speed[indiceMatchSpeed]);
+
+//			int totalSpeed = speedList.size();
+//			int occurences30 = Collections.frequency(speedList, 30);
+//			int occurences50 = Collections.frequency(speedList, 50);
+//			int occurences70 = Collections.frequency(speedList, 70);
+//			int occurences90 = Collections.frequency(speedList, 90);
+//			int occurences110 = Collections.frequency(speedList, 110);
+//
+//			System.out.println(speedList);
+//			System.out.println("\nFrequency 30: " + occurences30+"\n");
+//			System.out.println("\nFrequency 50: " + occurences50+"\n");
+//			System.out.println("\nFrequency 70: " + occurences70+"\n");
+//			System.out.println("\nFrequency 90: " + occurences90+"\n");
+//			System.out.println("\nFrequency 110: " + occurences110+"\n");
+//			System.out.println(speedList);
+			
+//			if(occurences30 > 10) {
+//				System.out.println("\nSpeed Found: 30\n");
+//				speedList.clear();
+//				
+//			}else if (occurences50 >= 1) {
+//				System.out.println("\nSpeed Found: 50\n");
+//				speedList.clear();
+//				
+//			}else if(occurences70 > 1) {
+//				System.out.println("\nSpeed Found: 70\n");
+//				speedList.clear();
+//				
+//			}else if(occurences90 > 1) {
+//				System.out.println("\nSpeed Found: 90\n");
+//				speedList.clear();
+//				
+//			}else if(occurences110 > 1) {
+//				System.out.println("\nSpeed Found: 110\n");
+//				speedList.clear();
+//			}
+			
+			if(indiceMatchSpeed==speed.length) {
+				System.out.println("\nDouble Road Sign Found!\n");
+			} else {
+				System.out.println("\nSpeed Found: " +speed[indiceMatchSpeed]+" Km/h\n");
+			}
 				
-				
-				speedList.add(speed[indiceMatchSpeed]);
-				//System.out.println(speed[indiceMatchSpeed]);
-				if(accurateSpeed){
-					//System.out.print(speed[indiceMatchSpeed]);
-					if(indiceMatchSpeed==speed.length) {
-						System.out.println("\nDouble Road Sign Found!\n");
-					} 
-					else {
-						System.out.println("\nSpeed Found: " +speed[indiceMatchSpeed]+" Km/h\n");
-					}
-				}	
 			return(res);
 		}
 
-		public static List<Integer> detectionImages(Mat img, List<Integer> speedList, Boolean accurateSpeed, List<Integer> radiusList) {
+		public static List<Integer> detectionImages(Mat img, List<Integer> speedList, Boolean accurateSpeed, List<Integer> radiusList, Boolean lastRadius) {
 
 			res = new ArrayList<Integer>();
 			findCircle = new ArrayList<findCircle>();
@@ -336,23 +360,46 @@ public class roadDetect {
 			Mat imgOri = new Mat();
 			img.copyTo(imgOri);
 
-			List<MatOfPoint> panneaux = roadDetect.detect_contour(img);
+			List<MatOfPoint> panel = roadDetect.detect_contour(img);
 
-			trace_contour(imgOri,panneaux);
+			trace_contour(imgOri,panel);
 			
 
 			for(int x=0;x<findCircle.size();x++) {
 				
 				Mat cropped=extract_Circle(imgOri,findCircle.get(x).center,findCircle.get(x).radius);
 				radiusList.add(findCircle.get(x).radius);
-				res  = matchingImages(cropped,speedList,accurateSpeed);
+				res  = matchingImages(cropped,speedList,accurateSpeed,lastRadius);
 			}
-
+			
+			if(findCircle.size() == 0) {
+				
+			}
 			//ImShow("Detected Panel", imgOri);
 			
-			System.out.println(res);
 			return(res);
 		}
+		
+		public static boolean traceOnly(Mat img) {
+
+			findCircle = new ArrayList<findCircle>();
+			boolean newCircle = false;
+			int num = 0;
+
+			List<MatOfPoint> panel = roadDetect.detect_contour(img);
+
+			num=trace_contour(img,panel);
+			
+			if(num<1) {
+				newCircle = true;
+			}
+			
+			//ImShow("Detected Panel", imgOri);
+			
+			return newCircle;
+		}
+		
+		
 		
 		
 }

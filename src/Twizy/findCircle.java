@@ -9,7 +9,7 @@ public class findCircle {
 	public int radius;
 	
 	public findCircle() {
-		this.center=new Point();
+		this.center = new Point();
 		this.radius=0;
 	}
 	

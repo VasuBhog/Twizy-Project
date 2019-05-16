@@ -83,20 +83,22 @@ public class main {
 		int previousSpeed = 0;
 		
 		boolean newPanel = false;
+		boolean imShow = false;
 		
-		VideoCapture camera = new VideoCapture("Twizy_assets/video1.avi");
+		VideoCapture camera = new VideoCapture("Twizy_assets/ourVid.avi");
 		
 		while (camera.read(frame)) {		
 			//checks to see Radius is filled
 			//System.out.println(radiusList);
 			if(newPanel || idVideo.isEmpty()) {
-				idVideo = roadDetect.detectionImages(frame,speedList,accurateSpeed,radiusList,lastRadius);
+				idVideo = roadDetect.detectionImages(frame,speedList,accurateSpeed,radiusList,lastRadius,imShow);
 				newPanel = false;
 				//System.out.println(speedList);
 			}else {
-				boolean trace = roadDetect.traceOnly(frame);
+				boolean trace = roadDetect.traceOnly(frame,imShow);
 				newPanel = trace;
 			}	
+			
 			ImageIcon image = new ImageIcon(Mat2bufferedImage(frame));
 			vidpanel.setIcon(image);
 			vidpanel.repaint();

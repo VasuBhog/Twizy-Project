@@ -1,4 +1,4 @@
-# Twizy_Project
+# Twizy Project
 Vasu Bhog 2019
 
 Goal: Recognize and Detect Road Signs in Real Time.
